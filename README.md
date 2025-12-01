@@ -1,36 +1,106 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Smart Notes - AI-Powered Personal Knowledge Hub
+
+An intelligent personal knowledge system where users can store notes, get AI-generated summaries, and search using natural language.
+
+## Features
+
+- 🔐 **OTP Authentication** - Secure email-based login
+- 📝 **Smart Notes** - Create, edit, and delete notes
+- 🤖 **AI Enrichment** - Auto-generated summaries, tags, and key topics
+- 📄 **Document Upload** - Upload PDFs and text files
+- 🔍 **Smart Search** - Natural language search across all notes
+- 💬 **Note Q&A** - Chat with AI about specific notes
+- 📊 **Dashboard** - View all notes with topic clusters
+
+## Tech Stack
+
+- **Frontend**: Next.js 16 (App Router), React 19, TypeScript
+- **State Management**: Redux Toolkit
+- **Styling**: Tailwind CSS
+- **Backend**: Supabase (Auth, Database, Storage, Edge Functions)
+- **AI**: OpenAI GPT-3.5/4
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
 
+- Node.js 18+ installed
+- Supabase account
+- OpenAI API key
+
+### Installation
+
+1. Clone the repository
+2. Install dependencies:
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+3. Set up environment variables:
+Create a `.env.local` file with:
+```
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+OPENAI_API_KEY=your_openai_api_key
+```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+4. Set up Supabase:
+   - Create a new Supabase project
+   - Run the SQL schema from `supabase/schema.sql` in the SQL Editor
+   - Enable Email Auth in Authentication settings
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+5. Run the development server:
+```bash
+npm run dev
+```
 
-## Learn More
+6. Open [http://localhost:3000](http://localhost:3000)
 
-To learn more about Next.js, take a look at the following resources:
+## Project Structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+smart-notes/
+├── app/
+│   ├── api/              # API routes
+│   ├── auth/             # Authentication pages
+│   ├── dashboard/        # Main dashboard
+│   ├── notes/            # Note pages
+│   └── layout.tsx        # Root layout
+├── lib/
+│   ├── store/            # Redux store & slices
+│   └── supabase/         # Supabase clients
+├── supabase/
+│   └── schema.sql        # Database schema
+└── .env.local            # Environment variables
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Usage
 
-## Deploy on Vercel
+1. **Sign Up/Login**: Use email OTP authentication
+2. **Create Notes**: Click "New Note" to create a note
+3. **AI Enrichment**: Notes are automatically analyzed for summaries and tags
+4. **Search**: Use natural language to find relevant notes
+5. **Edit/Delete**: Manage your notes from the dashboard
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## API Routes
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `POST /api/enrich-note` - Generate AI summaries and tags
+- `POST /api/search` - Semantic search across notes
+
+## Database Schema
+
+- **notes**: Stores user notes with AI-generated metadata
+- **documents**: Stores uploaded files and extracted content
+
+## Next Steps
+
+- [ ] Implement document upload functionality
+- [ ] Add vector embeddings for semantic search
+- [ ] Create note Q&A assistant
+- [ ] Add topic clustering
+- [ ] Implement real-time sync
+- [ ] Add voice notes support
+
+## License
+
+MIT
