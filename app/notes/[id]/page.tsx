@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { ArrowLeft, Save, Trash2, Sparkles } from 'lucide-react'
 import { DocumentUpload } from '@/components/DocumentUpload'
+import { LinkedDocuments } from '@/components/LinkedDocuments'
 import { NoteChat } from '@/components/NoteChat'
 
 export default function NoteDetailPage() {
@@ -22,6 +23,7 @@ export default function NoteDetailPage() {
   const [content, setContent] = useState('')
   const [tags, setTags] = useState('')
   const [saving, setSaving] = useState(false)
+  const [documentsRefresh, setDocumentsRefresh] = useState(0)
 
   useEffect(() => {
     if (!notes.length) {
@@ -179,7 +181,17 @@ export default function NoteDetailPage() {
           </div>
         )}
 
-        <DocumentUpload noteId={noteId} />
+        <div className="space-y-4 mb-8">
+          <DocumentUpload 
+            noteId={noteId} 
+            onUploadComplete={() => setDocumentsRefresh(prev => prev + 1)}
+          />
+
+          <LinkedDocuments 
+            noteId={noteId} 
+            refreshTrigger={documentsRefresh}
+          />
+        </div>
 
         <NoteChat 
           noteId={noteId}

@@ -1,8 +1,96 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { GoogleGenerativeAI } from '@google/generative-ai'
 import { createClient } from '@/lib/supabase/server'
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
+// Simple in-memory rate limiter
+const requestTimestamps: number[] = []
+const MAX_REQUESTS_PER_MINUTE = 10 // Conservative limit (Gemini allows 15)
+const RETRY_DELAY = 2000 // 2 seconds between retries
+
+async function sleep(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+async function callGeminiWithRetry(prompt: string, retries = 3): Promise<string> {
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY
+  
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      // Rate limiting check
+      const now = Date.now()
+      const oneMinuteAgo = now - 60000
+      
+      // Remove old timestamps
+      while (requestTimestamps.length > 0 && requestTimestamps[0] < oneMinuteAgo) {
+        requestTimestamps.shift()
+      }
+      
+      // If we're at the limit, wait
+      if (requestTimestamps.length >= MAX_REQUESTS_PER_MINUTE) {
+        const oldestRequest = requestTimestamps[0]
+        const waitTime = 60000 - (now - oldestRequest) + 1000 // Wait until oldest request is 1 minute old + 1 second buffer
+        console.log(`Rate limit reached, waiting ${waitTime}ms`)
+        await sleep(waitTime)
+      }
+      
+      // Add current request timestamp
+      requestTimestamps.push(Date.now())
+      
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: prompt
+              }]
+            }],
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 1000,
+            }
+          })
+        }
+      )
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        
+        // If rate limited, wait and retry
+        if (response.status === 429) {
+          console.log(`Rate limited (attempt ${attempt + 1}/${retries}), waiting ${RETRY_DELAY}ms`)
+          await sleep(RETRY_DELAY * (attempt + 1)) // Exponential backoff
+          continue
+        }
+        
+        throw new Error(`Gemini API error: ${response.statusText} - ${errorText}`)
+      }
+
+      const data = await response.json()
+      const answer = data.candidates?.[0]?.content?.parts?.[0]?.text
+      
+      if (!answer) {
+        throw new Error('No answer from Gemini')
+      }
+      
+      return answer
+      
+    } catch (error: any) {
+      console.error(`Attempt ${attempt + 1} failed:`, error.message)
+      
+      if (attempt === retries - 1) {
+        throw error
+      }
+      
+      await sleep(RETRY_DELAY * (attempt + 1))
+    }
+  }
+  
+  throw new Error('Max retries exceeded')
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -81,24 +169,11 @@ User question: ${question}
 
 Your answer:`
 
-    // Get AI response using Gemini
-    console.log('Calling Gemini API')
+    // Get AI response using Gemini REST API with rate limiting
+    console.log('Calling Gemini API with rate limiting')
     
-    const model = genAI.getGenerativeModel({ 
-      model: 'gemini-1.5-flash',
-      generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 1000,
-      }
-    })
-    const result = await model.generateContent(fullPrompt)
-    const answer = result.response.text()
-
-    if (!answer) {
-      console.error('No answer from Gemini')
-      return NextResponse.json({ error: 'No response from AI' }, { status: 500 })
-    }
-
+    const answer = await callGeminiWithRetry(fullPrompt)
+    
     console.log('AI response received, length:', answer.length)
 
     return NextResponse.json({ 
@@ -112,8 +187,24 @@ Your answer:`
       stack: error.stack
     })
     
+    // Provide user-friendly error messages
+    let errorMessage = 'An error occurred'
+    let statusCode = 500
+    
+    if (error.message.includes('Rate limit') || error.message.includes('429')) {
+      errorMessage = 'Too many requests. Please wait a moment and try again.'
+      statusCode = 429
+    } else if (error.message.includes('API key')) {
+      errorMessage = 'API configuration error. Please check your settings.'
+      statusCode = 500
+    } else if (error.message.includes('Max retries')) {
+      errorMessage = 'Service temporarily unavailable. Please try again in a minute.'
+      statusCode = 503
+    }
+    
     return NextResponse.json({ 
-      error: error.message || 'An error occurred' 
-    }, { status: 500 })
+      error: errorMessage,
+      details: error.message
+    }, { status: statusCode })
   }
 }

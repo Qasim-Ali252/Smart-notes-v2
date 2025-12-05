@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { GoogleGenerativeAI } from '@google/generative-ai'
 import { createClient } from '@/lib/supabase/server'
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
-
-export async function POST(request: NextRequest) {
+export async function POST(_request: NextRequest) {
   try {
     const supabase = await createClient()
     
@@ -65,15 +62,35 @@ Respond ONLY with valid JSON in this exact format:
 
     let result
     try {
-      const model = genAI.getGenerativeModel({ 
-        model: 'gemini-1.5-flash',
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 1200,
+      const GEMINI_API_KEY = process.env.GEMINI_API_KEY
+      
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [{
+              parts: [{
+                text: prompt
+              }]
+            }],
+            generationConfig: {
+              temperature: 0.7,
+              maxOutputTokens: 1200,
+            }
+          })
         }
-      })
-      const response = await model.generateContent(prompt)
-      const text = response.response.text()
+      )
+
+      if (!response.ok) {
+        throw new Error(`Gemini API error: ${response.statusText}`)
+      }
+
+      const data = await response.json()
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
       
       const jsonMatch = text.match(/\{[\s\S]*\}/)
       result = jsonMatch ? JSON.parse(jsonMatch[0]) : { clusters: [] }

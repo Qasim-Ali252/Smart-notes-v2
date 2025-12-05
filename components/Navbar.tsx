@@ -15,6 +15,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useState, useEffect } from "react";
 import { SearchBar } from "./SearchBar";
 import { SignInDialog } from "./SignInDialog";
+import { ThemeToggle } from "./theme-toggle";
 
 export const Navbar = () => {
   const router = useRouter();
@@ -28,11 +29,25 @@ export const Navbar = () => {
       setUser(user);
     };
     getUser();
-  }, [supabase]);
+
+    // Listen for auth state changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        router.refresh(); // Refresh the page data when user signs in
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [supabase, router]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    router.push('/auth/login');
+    setUser(null);
+    setSignInOpen(true); // Open the OTP dialog instead of redirecting
+    router.push('/'); // Go to home page
   };
 
   const initials = user?.email?.substring(0, 2).toUpperCase() || 'U';
@@ -54,6 +69,8 @@ export const Navbar = () => {
         <SearchBar />
 
         <div className="flex items-center gap-2">
+          <ThemeToggle />
+          
           <Button 
             size="sm" 
             onClick={() => {

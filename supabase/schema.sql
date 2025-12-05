@@ -22,9 +22,11 @@ CREATE TABLE IF NOT EXISTS documents (
   file_name TEXT NOT NULL,
   file_path TEXT NOT NULL,
   file_type TEXT,
+  file_size INTEGER,
   extracted_text TEXT,
   summary TEXT,
   key_insights TEXT[],
+  topic_labels TEXT[],
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 

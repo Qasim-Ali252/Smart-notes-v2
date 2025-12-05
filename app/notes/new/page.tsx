@@ -6,13 +6,16 @@ import { createNote } from '@/lib/store/slices/notesSlice'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { ArrowLeft, Save } from 'lucide-react'
+import { DocumentUpload } from '@/components/DocumentUpload'
+import { Separator } from '@/components/ui/separator'
+import { ArrowLeft, Save, Paperclip } from 'lucide-react'
 
 export default function NewNotePage() {
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [tags, setTags] = useState('')
   const [saving, setSaving] = useState(false)
+  const [noteId, setNoteId] = useState<string | null>(null)
   const router = useRouter()
   const dispatch = useAppDispatch()
 
@@ -29,7 +32,12 @@ export default function NewNotePage() {
         })
       ).unwrap()
       
-      // Trigger AI enrichment in the background
+      setNoteId(result.id)
+      
+      // Show AI enrichment is happening
+      console.log('✨ AI is analyzing your note...')
+      
+      // Trigger AI enrichment (this happens automatically in the background)
       fetch('/api/enrich-note', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -37,14 +45,25 @@ export default function NewNotePage() {
           noteId: result.id, 
           content: content 
         })
-      }).catch(err => console.error('AI enrichment failed:', err))
-      
-      router.push('/dashboard')
+      })
+      .then(res => res.json())
+      .then(data => {
+        console.log('✅ AI enrichment complete:', {
+          summary: data.summary,
+          tags: data.tags,
+          topics: data.key_topics
+        })
+      })
+      .catch(err => console.error('❌ AI enrichment failed:', err))
     } catch (error) {
       console.error('Failed to create note:', error)
     } finally {
       setSaving(false)
     }
+  }
+
+  const handleFinish = () => {
+    router.push('/dashboard')
   }
 
   return (
@@ -94,9 +113,28 @@ export default function NewNotePage() {
             placeholder="Start writing..."
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className="min-h-[500px] border-none focus-visible:ring-0 bg-transparent px-0 resize-none"
+            className="min-h-[400px] border-none focus-visible:ring-0 bg-transparent px-0 resize-none"
           />
         </div>
+
+        {noteId && (
+          <div className="glass rounded-2xl p-6 space-y-4 mt-6">
+            <div className="flex items-center gap-2 mb-4">
+              <Paperclip className="h-5 w-5 text-primary" />
+              <h3 className="text-lg font-semibold">Attach Supporting Documents</h3>
+            </div>
+            <p className="text-sm text-muted-foreground mb-4">
+              Upload PDFs, articles, screenshots, or research papers. AI will extract key insights and link them to your note.
+            </p>
+            <DocumentUpload noteId={noteId} />
+            <Separator className="my-4" />
+            <div className="flex justify-end">
+              <Button onClick={handleFinish} className="gap-2">
+                Finish & View Dashboard
+              </Button>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   )

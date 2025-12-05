@@ -22,6 +22,21 @@ export const SignInDialog = ({ open, onOpenChange }: SignInDialogProps) => {
   const supabase = createClient()
   const router = useRouter()
 
+  // Reset state when dialog closes
+  const handleOpenChange = (newOpen: boolean) => {
+    if (!newOpen) {
+      // Reset all state when closing
+      setTimeout(() => {
+        setStep('email')
+        setEmail('')
+        setOtp('')
+        setMessage('')
+        setLoading(false)
+      }, 200) // Small delay to allow close animation
+    }
+    onOpenChange(newOpen)
+  }
+
   const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -67,7 +82,7 @@ export const SignInDialog = ({ open, onOpenChange }: SignInDialogProps) => {
     } else {
       setMessage('Success! Signing you in...')
       setTimeout(() => {
-        onOpenChange(false)
+        handleOpenChange(false)
         router.refresh()
       }, 1000)
     }
@@ -99,7 +114,7 @@ export const SignInDialog = ({ open, onOpenChange }: SignInDialogProps) => {
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-md glass-strong border-2 border-primary/20">
         <DialogHeader>
           <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 animate-in zoom-in-50 duration-300" style={{
