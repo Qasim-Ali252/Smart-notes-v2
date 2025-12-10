@@ -70,6 +70,8 @@ export async function POST(request: NextRequest) {
       p_user_id: user.id
     })
 
+    let documentResults: any[] = []
+
     if (docsError) {
       console.error('Documents search error:', docsError)
       // Fallback to fetching all documents and calculating similarity client-side
@@ -98,9 +100,9 @@ export async function POST(request: NextRequest) {
       .sort((a, b) => b.relevance_score - a.relevance_score)
       .slice(0, 10)
       
-      var documentResults = docsWithScores
+      documentResults = docsWithScores
     } else {
-      var documentResults = (documents || []).map((doc: any) => ({
+      documentResults = (documents || []).map((doc: any) => ({
         type: 'document' as const,
         id: doc.id,
         title: doc.file_name,
