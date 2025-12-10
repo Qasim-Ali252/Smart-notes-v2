@@ -54,10 +54,10 @@ export default function SettingsPage() {
         setStats({ total: notes.length, favorites, recent })
       }
 
-      // Load sessions
-      const { data: { sessions: userSessions } } = await supabase.auth.getSession()
-      if (userSessions) {
-        setSessions([userSessions])
+      // Load current session
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        setSessions([session])
       }
     } catch (error) {
       console.error('Error loading user data:', error)
