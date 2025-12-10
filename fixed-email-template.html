@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verification Code</title>
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #e8e6f0; line-height: 1.6;">
+    <!-- Email Container -->
+    <table role="presentation" cellspacing="0" cellpadding="0" border="0" align="center" width="100%" style="max-width: 600px; margin: 0 auto; background-color: #f5f4f8;">
+        <!-- Header -->
+        <tr>
+            <td style="padding: 32px 24px; text-align: center; background: linear-gradient(135deg, #7c4dff 0%, #9575cd 100%); border-radius: 0 0 24px 24px;">
+                <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #ffffff; letter-spacing: -0.5px;">Verification Code</h1>
+                <p style="margin: 8px 0 0 0; font-size: 14px; color: rgba(255, 255, 255, 0.9);">Secure your account with this one-time code</p>
+            </td>
+        </tr>
+        <!-- Body -->
+        <tr>
+            <td style="padding: 32px 24px;">
+                <!-- Welcome Message -->
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 20px rgba(124, 77, 255, 0.08); margin-bottom: 24px;">
+                    <tr>
+                        <td style="padding: 24px;">
+                            <h2 style="margin: 0 0 12px 0; font-size: 20px; font-weight: 600; color: #2d2640;">Hello there! 👋</h2>
+                            <p style="margin: 0; font-size: 14px; color: #6b6580; line-height: 1.7;">We received a request to verify your identity. Use the code below to complete your sign-in. If you didn't make this request, you can safely ignore this email.</p>
+                        </td>
+                    </tr>
+                </table>
+                <!-- OTP Code Section -->
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 20px rgba(124, 77, 255, 0.08); margin-bottom: 24px;">
+                    <tr>
+                        <td style="padding: 32px 24px; text-align: center;">
+                            <p style="margin: 0 0 20px 0; font-size: 14px; color: #6b6580;">Enter this verification code to complete your sign-in:</p>
+                            <!-- DYNAMIC OTP CODE - THIS IS THE FIX -->
+                            <div style="width: 100%;max-width: 260px;margin: 0 auto;background-color: #f5f4f8;border: 2px solid rgba(124, 77, 255, 0.3);border-radius: 12px;font-size: 28px;font-weight: 700;color: #7c4dff;letter-spacing: 8px;text-align: center;padding: 16px 0;user-select: text;">{{ .Token }}</div>
+                            <p style="margin: 20px 0 0 0; font-size: 12px; color: #6b6580;">This code will expire in <span style="font-weight: 600; color: #7c4dff;">10 minutes</span></p>
+                        </td>
+                    </tr>
+                </table>
+                <!-- Security Notice -->
+                <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff; border-radius: 16px; box-shadow: 0 4px 20px rgba(124, 77, 255, 0.08);">
+                    <tr>
+                        <td style="padding: 24px; border-top: 1px solid #ebe9f0;">
+                            <p style="margin: 0; font-size: 12px; color: #6b6580; line-height: 1.6;"><strong style="color: #2d2640;">Security tip:</strong> Never share this code with anyone. Our team will never ask for your verification code via phone or email.</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        <!-- Footer -->
+        <tr>
+            <td style="padding: 24px; text-align: center; border-top: 1px solid #ebe9f0;">
+                <!-- Contact Info -->
+                <p style="margin: 0 0 8px 0; font-size: 12px; color: #6b6580;">Questions? Contact us at <a href="mailto:support@smartnotes.com" style="color: #7c4dff; text-decoration: none;">support@smartnotes.com</a></p>
+                <!-- Legal Links -->
+                <p style="margin: 0 0 16px 0; font-size: 11px; color: #9994a8;">
+                    <a href="#" style="color: #9994a8; text-decoration: none;">Privacy Policy</a>
+                    <span style="margin: 0 8px;">•</span>
+                    <a href="#" style="color: #9994a8; text-decoration: none;">Terms of Service</a>
+                </p>
+                <!-- Copyright -->
+                <p style="margin: 0; font-size: 11px; color: #9994a8;">© 2024 Smart Notes. All rights reserved.</p>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

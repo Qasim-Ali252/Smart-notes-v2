@@ -19,6 +19,7 @@ export const SignInDialog = ({ open, onOpenChange }: SignInDialogProps) => {
   const [otp, setOtp] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
+  const [otpSentAt, setOtpSentAt] = useState<Date | null>(null)
   const supabase = createClient()
   const router = useRouter()
 
@@ -32,6 +33,7 @@ export const SignInDialog = ({ open, onOpenChange }: SignInDialogProps) => {
         setOtp('')
         setMessage('')
         setLoading(false)
+        setOtpSentAt(null)
       }, 200) // Small delay to allow close animation
     }
     onOpenChange(newOpen)
@@ -55,6 +57,7 @@ export const SignInDialog = ({ open, onOpenChange }: SignInDialogProps) => {
       setLoading(false)
     } else {
       setMessage('OTP code sent to your email!')
+      setOtpSentAt(new Date())
       setStep('otp')
       setLoading(false)
     }
@@ -77,13 +80,22 @@ export const SignInDialog = ({ open, onOpenChange }: SignInDialogProps) => {
     })
 
     if (error) {
-      setMessage(error.message)
+      let errorMessage = error.message
+      
+      // Provide more helpful error messages
+      if (error.message.includes('expired')) {
+        errorMessage = 'Verification code has expired. Please request a new one.'
+      } else if (error.message.includes('invalid')) {
+        errorMessage = 'Invalid verification code. Please check and try again.'
+      }
+      
+      setMessage(errorMessage)
       setLoading(false)
     } else {
       setMessage('Success! Signing you in...')
       setTimeout(() => {
         handleOpenChange(false)
-        router.refresh()
+        // The Navbar will handle the reload automatically
       }, 1000)
     }
   }
@@ -92,6 +104,7 @@ export const SignInDialog = ({ open, onOpenChange }: SignInDialogProps) => {
     setStep('email')
     setOtp('')
     setMessage('')
+    setOtpSentAt(null)
   }
 
   const handleResendOTP = async () => {
@@ -109,6 +122,7 @@ export const SignInDialog = ({ open, onOpenChange }: SignInDialogProps) => {
       setMessage(error.message)
     } else {
       setMessage('New OTP code sent!')
+      setOtpSentAt(new Date())
     }
     setLoading(false)
   }
@@ -262,9 +276,15 @@ export const SignInDialog = ({ open, onOpenChange }: SignInDialogProps) => {
               </Button>
             </div>
 
-            <p className="text-center text-xs text-muted-foreground">
-              Check your email spam folder if you don't see the code
-            </p>
+            <div className="text-center text-xs text-muted-foreground space-y-1">
+              <p>Check your email spam folder if you don't see the code</p>
+              <p>⏰ Verification codes expire after 5 minutes</p>
+              {otpSentAt && (
+                <p className="text-primary/70">
+                  Code sent {Math.floor((Date.now() - otpSentAt.getTime()) / 1000 / 60)} minutes ago
+                </p>
+              )}
+            </div>
           </form>
         )}
       </DialogContent>

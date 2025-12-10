@@ -1,7 +1,7 @@
 'use client'
 import { Bell, Plus, LogOut, User as UserIcon, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,12 +15,19 @@ import { createClient } from "@/lib/supabase/client";
 import { useState, useEffect } from "react";
 import { SearchBar } from "./SearchBar";
 import { SignInDialog } from "./SignInDialog";
+import { WelcomeDialog } from "./WelcomeDialog";
 import { ThemeToggle } from "./theme-toggle";
 
 export const Navbar = () => {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [signInOpen, setSignInOpen] = useState(false);
+  const [welcomeOpen, setWelcomeOpen] = useState(false);
+  
+  // Debug welcomeOpen state changes
+  useEffect(() => {
+    console.log('welcomeOpen state changed to:', welcomeOpen);
+  }, [welcomeOpen]);
   const supabase = createClient();
 
   useEffect(() => {
@@ -31,10 +38,36 @@ export const Navbar = () => {
     getUser();
 
     // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log('Auth state change:', event, 'User:', !!session?.user);
       setUser(session?.user ?? null);
-      if (session?.user) {
-        router.refresh(); // Refresh the page data when user signs in
+      
+      // Only reload once after successful sign-in
+      if (event === 'SIGNED_IN' && session?.user) {
+        try {
+          const hasReloaded = typeof window !== 'undefined' ? localStorage.getItem('hasReloadedAfterSignIn') : null;
+          if (!hasReloaded && typeof window !== 'undefined') {
+            localStorage.setItem('hasReloadedAfterSignIn', 'true');
+            setTimeout(() => {
+              window.location.reload();
+            }, 500);
+          }
+        } catch (error) {
+          console.log('localStorage not available, skipping reload');
+        }
+      }
+      
+      // Clear the reload flag when user signs out
+      if (event === 'SIGNED_OUT') {
+        console.log('SIGNED_OUT event detected');
+        try {
+          if (typeof window !== 'undefined') {
+            localStorage.removeItem('hasReloadedAfterSignIn');
+          }
+        } catch (error) {
+          console.log('localStorage not available');
+        }
+        // Don't reset welcomeOpen here - let handleSignOut manage it
       }
     });
 
@@ -44,10 +77,24 @@ export const Navbar = () => {
   }, [supabase, router]);
 
   const handleSignOut = async () => {
+    console.log('Signing out...');
+    
     await supabase.auth.signOut();
     setUser(null);
-    setSignInOpen(true); // Open the OTP dialog instead of redirecting
-    router.push('/'); // Go to home page
+    
+    // Set welcome dialog to open AFTER signing out
+    setTimeout(() => {
+      setWelcomeOpen(true);
+      console.log('Welcome dialog set to open');
+    }, 200);
+    
+    // Don't navigate away - stay on current page
+    // router.push('/'); 
+  };
+
+  const handleWelcomeSignIn = () => {
+    setWelcomeOpen(false);
+    setSignInOpen(true);
   };
 
   const initials = user?.email?.substring(0, 2).toUpperCase() || 'U';
@@ -95,6 +142,7 @@ export const Navbar = () => {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Avatar className="h-8 w-8 cursor-pointer ring-2 ring-primary/20 hover:ring-primary/40 transition-all">
+                    <AvatarImage src={user?.user_metadata?.avatar_url} />
                     <AvatarFallback className="bg-primary/10 text-primary font-medium">
                       {initials}
                     </AvatarFallback>
@@ -103,7 +151,9 @@ export const Navbar = () => {
                 <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel>
                     <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium">My Account</p>
+                      <p className="text-sm font-medium">
+                        {user?.user_metadata?.display_name || 'My Account'}
+                      </p>
                       <p className="text-xs text-muted-foreground truncate">
                         {user?.email}
                       </p>
@@ -114,7 +164,7 @@ export const Navbar = () => {
                     <UserIcon className="mr-2 h-4 w-4" />
                     Dashboard
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => router.push('/settings')}>
                     <Settings className="mr-2 h-4 w-4" />
                     Settings
                   </DropdownMenuItem>
@@ -127,19 +177,34 @@ export const Navbar = () => {
               </DropdownMenu>
             </>
           ) : (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setSignInOpen(true)}
-              className="gap-2"
-            >
-              Sign In
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setWelcomeOpen(true)}
+                className="text-xs"
+              >
+                Test
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSignInOpen(true)}
+                className="gap-2"
+              >
+                Sign In
+              </Button>
+            </div>
           )}
         </div>
       </div>
 
       <SignInDialog open={signInOpen} onOpenChange={setSignInOpen} />
+      <WelcomeDialog 
+        open={welcomeOpen} 
+        onOpenChange={setWelcomeOpen}
+        onSignInClick={handleWelcomeSignIn}
+      />
     </nav>
   );
 };

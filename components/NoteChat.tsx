@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Send, Bot, User, Loader2, Sparkles } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import ReactMarkdown from 'react-markdown'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -137,7 +138,19 @@ export const NoteChat = ({ noteId, noteTitle, noteContent }: NoteChatProps) => {
                     : 'bg-muted'
                 )}
               >
-                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                <div className="text-sm prose prose-sm dark:prose-invert max-w-none">
+                  <ReactMarkdown
+                    components={{
+                      p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                      strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                      ul: ({ children }) => <ul className="list-disc pl-4 mb-2">{children}</ul>,
+                      ol: ({ children }) => <ol className="list-decimal pl-4 mb-2">{children}</ol>,
+                      li: ({ children }) => <li className="mb-1">{children}</li>,
+                    }}
+                  >
+                    {message.content}
+                  </ReactMarkdown>
+                </div>
                 <span className="text-xs opacity-70 mt-1 block">
                   {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </span>
@@ -180,7 +193,7 @@ export const NoteChat = ({ noteId, noteTitle, noteContent }: NoteChatProps) => {
         </div>
       )}
 
-      <div className="flex gap-2">
+      <div className="flex gap-2 ">
         <Textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}

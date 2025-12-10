@@ -50,7 +50,7 @@ export const SearchBar = () => {
 
     setLoading(true)
     try {
-      // Try semantic search first (natural language)
+      // Use semantic search with vector embeddings
       const response = await fetch('/api/search-semantic', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

@@ -81,59 +81,70 @@ serve(async (req) => {
       text = await fileData.text()
       console.log(`📝 Read text file: ${text.length} characters`)
     } else if (fileExt === 'pdf') {
-      // PDF extraction - basic approach for text-based PDFs
       try {
-        console.log('📄 Attempting PDF text extraction...')
+        console.log('📄 Using Gemini to extract PDF content directly...')
         
+        const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
+        if (!GEMINI_API_KEY) {
+          throw new Error('GEMINI_API_KEY not configured')
+        }
+        
+        // Convert PDF to base64
         const arrayBuffer = await fileData.arrayBuffer()
         const uint8Array = new Uint8Array(arrayBuffer)
-        const decoder = new TextDecoder('latin1')
-        const rawText = decoder.decode(uint8Array)
+        const base64Pdf = btoa(String.fromCharCode(...uint8Array))
         
-        // Extract text from PDF streams
-        const streamRegex = /stream\s*([\s\S]*?)\s*endstream/g
-        const textObjects: string[] = []
-        let match
-        
-        while ((match = streamRegex.exec(rawText)) !== null) {
-          const streamContent = match[1]
-          // Look for text showing operators: Tj, TJ, '
-          const textMatches = streamContent.match(/\(([^)]*)\)/g)
-          if (textMatches) {
-            textMatches.forEach(tm => {
-              const cleanText = tm
-                .slice(1, -1)
-                .replace(/\\n/g, '\n')
-                .replace(/\\r/g, '')
-                .replace(/\\t/g, ' ')
-                .replace(/\\/g, '')
-              if (cleanText.trim().length > 0) {
-                textObjects.push(cleanText)
+        // Use Gemini's native PDF support (same model as enrich-note function)
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{
+                parts: [
+                  {
+                    inline_data: {
+                      mime_type: 'application/pdf',
+                      data: base64Pdf
+                    }
+                  },
+                  {
+                    text: 'Extract all text content from this PDF document. Return the complete text exactly as it appears in the document, maintaining the original structure and formatting as much as possible.'
+                  }
+                ]
+              }],
+              generationConfig: {
+                temperature: 0.1,
+                maxOutputTokens: 8000,
               }
             })
           }
+        )
+        
+        if (!response.ok) {
+          const errorText = await response.text()
+          throw new Error(`Gemini API error: ${response.status} - ${errorText}`)
         }
         
-        text = textObjects.join(' ').replace(/\s+/g, ' ').trim()
+        const data = await response.json()
+        text = data.candidates?.[0]?.content?.parts?.[0]?.text || ''
         
-        // Filter out PDF metadata/garbage
-        if (text.length > 0) {
-          const words = text.split(' ')
-          const cleanWords = words.filter(word => {
-            // Keep words that are mostly alphanumeric
-            const alphanumeric = word.replace(/[^a-zA-Z0-9]/g, '')
-            return alphanumeric.length >= word.length * 0.5 && word.length > 1
-          })
-          text = cleanWords.join(' ')
+        if (!text || text.trim().length < 50) {
+          throw new Error('Gemini returned no usable text from PDF')
         }
         
-        if (text && text.length > 100) {
-          console.log(`✅ Extracted ${text.length} characters from PDF`)
-        } else {
-          throw new Error('Could not extract meaningful text from PDF')
-        }
-      } catch (error) {
-        console.error('⚠️ PDF extraction failed:', error.message)
+        // Clean up the extracted text
+        text = text
+          .replace(/\r\n/g, '\n')
+          .replace(/\n{3,}/g, '\n\n')
+          .replace(/[ \t]{2,}/g, ' ')
+          .trim()
+        
+        console.log(`✅ Gemini extracted ${text.length} characters from PDF`)
+        
+      } catch (error: any) {
+        console.error('⚠️ PDF extraction failed:', error?.message ?? error)
         
         // Fallback: Store PDF without extraction
         const result = {
@@ -209,17 +220,32 @@ serve(async (req) => {
     // Call Gemini API directly using REST
     const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
 
-    const prompt = `Extract key information from this document and provide:
-1. A concise summary (max 150 words)
-2. Key insights (3-5 bullet points)
-3. Main topics (3-5 keywords)
-4. Topic labels for categorization (3-5 labels like "research", "technical", "business", etc.)
+    const prompt = `You are an expert document analyst. Analyze the following document and extract meaningful insights.
 
 Document content:
 ${textToAnalyze}
 
+Provide a comprehensive analysis with:
+
+1. **Summary**: Write a clear, informative summary (100-150 words) that captures the main message, purpose, and key points of the document. Focus on what the document is about and why it matters.
+
+2. **Key Insights**: Identify 3-5 actionable or important insights from the content. These should be:
+   - Specific findings, conclusions, or important facts from the document
+   - NOT generic statements like "document contains X words"
+   - Valuable takeaways that someone would want to remember
+   - Written as complete, meaningful sentences
+
+3. **Main Topics**: Extract 3-5 specific keywords or phrases that represent the core subjects discussed in the document.
+
+4. **Topic Labels**: Assign 3-5 categorical labels for organizing this document (e.g., "research", "technical", "business", "healthcare", "education", "finance", etc.)
+
 Respond ONLY with valid JSON in this exact format:
-{ "summary": "...", "key_insights": ["insight1", "insight2"], "topics": ["topic1", "topic2"], "topic_labels": ["label1", "label2"] }`
+{
+  "summary": "detailed summary here",
+  "key_insights": ["meaningful insight 1", "meaningful insight 2", "meaningful insight 3"],
+  "topics": ["topic1", "topic2", "topic3"],
+  "topic_labels": ["label1", "label2", "label3"]
+}`
 
     let result = null
 
@@ -229,7 +255,7 @@ Respond ONLY with valid JSON in this exact format:
         console.log('🤖 Calling Gemini AI...')
 
         const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -243,19 +269,32 @@ Respond ONLY with valid JSON in this exact format:
           }
         )
 
+        if (!response.ok) {
+          const errorText = await response.text()
+          throw new Error(`Gemini API error: ${response.status} - ${errorText}`)
+        }
+
         const aiData = await response.json()
         const aiText = aiData.candidates?.[0]?.content?.parts?.[0]?.text || ''
 
-        console.log('✅ Got response from Gemini')
+        console.log('✅ Got response from Gemini:', aiText.substring(0, 200))
 
         const jsonMatch = aiText.match(/\{[\s\S]*\}/)
-        result = jsonMatch ? JSON.parse(jsonMatch[0]) : null
-
-        if (result) {
-          console.log('✅ AI extraction successful')
+        if (!jsonMatch) {
+          console.error('❌ No JSON found in AI response:', aiText)
+          throw new Error('AI did not return valid JSON')
         }
-      } catch (error) {
-        console.error('⚠️ AI extraction failed:', error.message)
+        
+        result = JSON.parse(jsonMatch[0])
+
+        if (result && result.summary && result.key_insights) {
+          console.log('✅ AI extraction successful with', result.key_insights.length, 'insights')
+        } else {
+          console.error('❌ AI returned incomplete data:', result)
+          throw new Error('AI returned incomplete data')
+        }
+      } catch (error: any) {
+        console.error('⚠️ AI extraction failed:', error?.message ?? error)
       }
     }
 
