@@ -33,6 +33,8 @@ export async function POST(request: NextRequest) {
       p_user_id: user.id
     })
 
+    let noteResults: any[] = []
+
     if (notesError) {
       console.error('Notes search error:', notesError)
       // Fallback to fetching all notes and calculating similarity client-side
@@ -51,9 +53,9 @@ export async function POST(request: NextRequest) {
       .sort((a, b) => b.relevance_score - a.relevance_score)
       .slice(0, 10)
       
-      var noteResults = notesWithScores
+      noteResults = notesWithScores
     } else {
-      var noteResults = (notes || []).map((note: any) => ({
+      noteResults = (notes || []).map((note: any) => ({
         ...note,
         type: 'note' as const,
         relevance_score: note.similarity
