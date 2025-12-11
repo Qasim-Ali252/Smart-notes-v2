@@ -238,10 +238,10 @@ function DashboardContent() {
                       )}
                     </Button>
                   </DialogTrigger>
-                  <DialogContent className="max-w-md max-h-[80vh]">
+                  <DialogContent className="max-w-md max-h-[80vh]" aria-describedby="filter-description">
                     <DialogHeader>
                       <DialogTitle>Filter Notes</DialogTitle>
-                      <DialogDescription>
+                      <DialogDescription id="filter-description">
                         Filter your notes by tags, topics, date, and more
                       </DialogDescription>
                     </DialogHeader>
