@@ -6,6 +6,9 @@ import { Input } from '@/components/ui/input'
 import { Mail, Sparkles } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic'
+
 function LoginForm() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
