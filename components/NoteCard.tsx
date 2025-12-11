@@ -40,6 +40,7 @@ export const NoteCard = ({
   const [isHovered, setIsHovered] = useState(false);
   const [isPinned, setIsPinned] = useState(initialPinned);
   const [isFavorite, setIsFavorite] = useState(initialFavorite);
+  const [isSummaryExpanded, setIsSummaryExpanded] = useState(false);
   const router = useRouter();
   const dispatch = useAppDispatch();
 
@@ -107,6 +108,14 @@ export const NoteCard = ({
     router.push(`/notes/new?duplicate=${id}`);
   };
 
+  const handleToggleSummary = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsSummaryExpanded(!isSummaryExpanded);
+  };
+
+  // Check if summary is long enough to need truncation (about 2 lines worth)
+  const shouldTruncateSummary = aiSummary && aiSummary.length > 120;
+
   return (
     <div
       className="group relative glass rounded-2xl p-4 cursor-pointer note-card-hover"
@@ -164,9 +173,34 @@ export const NoteCard = ({
       </div>
 
       {aiSummary && (
-        <div className="mb-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 border border-primary/20">
-          <Sparkles className="h-3 w-3 text-primary" />
-          <span className="text-xs font-medium text-primary">{aiSummary}</span>
+        <div className="mb-3">
+          <div 
+            className={cn(
+              "flex items-start gap-1.5 px-2.5 py-2 rounded-lg bg-primary/10 border border-primary/20 transition-all duration-200",
+              shouldTruncateSummary && "cursor-pointer hover:bg-primary/15"
+            )}
+            onClick={shouldTruncateSummary ? handleToggleSummary : undefined}
+          >
+            <Sparkles className="h-3 w-3 text-primary shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <div 
+                className={cn(
+                  "text-xs font-medium text-primary",
+                  !isSummaryExpanded && shouldTruncateSummary && "line-clamp-2"
+                )}
+              >
+                {aiSummary}
+              </div>
+              {shouldTruncateSummary && (
+                <button
+                  className="text-xs text-primary/70 hover:text-primary mt-1 font-medium transition-colors"
+                  onClick={handleToggleSummary}
+                >
+                  {isSummaryExpanded ? '↑ Show less' : '↓ Show more'}
+                </button>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
@@ -184,22 +218,24 @@ export const NoteCard = ({
       </p>
 
       {tags.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mb-3">
-          {tags.map((tag, idx) => {
-            const color = tagColors[idx % tagColors.length];
-            return (
-              <span
-                key={idx}
-                className={cn(
-                  "tag-chip",
-                  `bg-tag-${color}`,
-                  `text-tag-${color}-fg`
-                )}
-              >
-                {tag}
-              </span>
-            );
-          })}
+        <div className="h-[58px] mb-3 overflow-hidden">
+          <div className="flex flex-wrap gap-1.5 h-full">
+            {tags.map((tag, idx) => {
+              const color = tagColors[idx % tagColors.length];
+              return (
+                <span
+                  key={idx}
+                  className={cn(
+                    "tag-chip h-fit",
+                    `bg-tag-${color}`,
+                    `text-tag-${color}-fg`
+                  )}
+                >
+                  {tag}
+                </span>
+              );
+            })}
+          </div>
         </div>
       )}
 

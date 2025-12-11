@@ -1,13 +1,14 @@
 'use client'
-import { FileText, Sparkles, Calendar, TrendingUp } from 'lucide-react'
+import { FileText, Sparkles, Calendar, TrendingUp, Star } from 'lucide-react'
 
 interface DashboardStatsProps {
   totalNotes: number
   notesThisWeek: number
   enrichedNotes: number
+  favouriteNotes: number
 }
 
-export const DashboardStats = ({ totalNotes, notesThisWeek, enrichedNotes }: DashboardStatsProps) => {
+export const DashboardStats = ({ totalNotes, notesThisWeek, enrichedNotes, favouriteNotes }: DashboardStatsProps) => {
   const stats = [
     {
       label: 'Total Notes',
@@ -28,6 +29,12 @@ export const DashboardStats = ({ totalNotes, notesThisWeek, enrichedNotes }: Das
       color: 'text-primary'
     },
     {
+      label: 'Favourites',
+      value: favouriteNotes,
+      icon: Star,
+      color: 'text-yellow-500'
+    },
+    {
       label: 'Growth',
       value: notesThisWeek > 0 ? '+' + notesThisWeek : '0',
       icon: TrendingUp,
@@ -36,7 +43,7 @@ export const DashboardStats = ({ totalNotes, notesThisWeek, enrichedNotes }: Das
   ]
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div className="grid grid-cols-5 gap-4 mb-6">
       {stats.map((stat, idx) => (
         <div key={idx} className="glass rounded-2xl p-4">
           <div className="flex items-center justify-between mb-2">

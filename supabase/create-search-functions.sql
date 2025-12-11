@@ -1,6 +1,10 @@
 -- Enable the pgvector extension if not already enabled
 CREATE EXTENSION IF NOT EXISTS vector;
 
+-- Drop existing functions first to avoid conflicts
+DROP FUNCTION IF EXISTS match_notes(vector, float, int, uuid);
+DROP FUNCTION IF EXISTS match_documents(vector, float, int, uuid);
+
 -- Function to match notes using vector similarity
 CREATE OR REPLACE FUNCTION match_notes(
   query_embedding vector(1536),
@@ -34,13 +38,14 @@ BEGIN
     notes.created_at,
     notes.updated_at,
     notes.user_id,
-    (notes.embedding <#> query_embedding) * -1 AS similarity
+    GREATEST(0, 1 - (notes.embedding <=> query_embedding)) AS similarity
   FROM notes
   WHERE 
     (p_user_id IS NULL OR notes.user_id = p_user_id)
     AND notes.embedding IS NOT NULL
-    AND (notes.embedding <#> query_embedding) * -1 > match_threshold
-  ORDER BY notes.embedding <#> query_embedding
+    AND notes.embedding <=> query_embedding IS NOT NULL
+    AND GREATEST(0, 1 - (notes.embedding <=> query_embedding)) > match_threshold
+  ORDER BY notes.embedding <=> query_embedding
   LIMIT match_count;
 END;
 $$;
@@ -82,13 +87,14 @@ BEGIN
     documents.note_id,
     documents.created_at,
     documents.user_id,
-    (documents.embedding <#> query_embedding) * -1 AS similarity
+    GREATEST(0, 1 - (documents.embedding <=> query_embedding)) AS similarity
   FROM documents
   WHERE 
     (p_user_id IS NULL OR documents.user_id = p_user_id)
     AND documents.embedding IS NOT NULL
-    AND (documents.embedding <#> query_embedding) * -1 > match_threshold
-  ORDER BY documents.embedding <#> query_embedding
+    AND documents.embedding <=> query_embedding IS NOT NULL
+    AND GREATEST(0, 1 - (documents.embedding <=> query_embedding)) > match_threshold
+  ORDER BY documents.embedding <=> query_embedding
   LIMIT match_count;
 END;
 $$;

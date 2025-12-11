@@ -106,14 +106,21 @@ export const Navbar = () => {
     <nav className="sticky top-0 z-50 h-16 glass-strong border-b border-border/50">
       <div className="h-full px-4 flex items-center justify-between gap-4">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{
-            background: 'linear-gradient(135deg, oklch(55% 0.18 280), oklch(60% 0.20 280))'
-          }}>
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="w-8 h-8 rounded-lg flex items-center justify-center hover:scale-105 transition-transform cursor-pointer" 
+            style={{
+              background: 'linear-gradient(135deg, oklch(55% 0.18 280), oklch(60% 0.20 280))'
+            }}
+          >
             <span className="text-white font-bold text-sm">S</span>
-          </div>
-          <span className="font-semibold text-lg hidden sm:inline">
+          </button>
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="font-semibold text-lg hidden sm:inline hover:text-primary transition-colors cursor-pointer"
+          >
             Smart Notes
-          </span>
+          </button>
         </div>
 
         <SearchBar />

@@ -3,12 +3,13 @@ import { useEffect, useState, useMemo, Suspense } from 'react'
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks'
 import { fetchNotes } from '@/lib/store/slices/notesSlice'
 import { Navbar } from '@/components/Navbar'
-import { Sidebar } from '@/components/Sidebar'
+
 import { NoteCard } from '@/components/NoteCard'
-import { SlidersHorizontal, LayoutGrid, List, X, Plus, FolderPlus } from "lucide-react"
+import { SlidersHorizontal, FolderPlus, Home, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { TopicClusters } from '@/components/TopicClusters'
 import { DashboardStats } from '@/components/DashboardStats'
+import { MyNotebooks } from '@/components/MyNotebooks'
 import {
   Dialog,
   DialogContent,
@@ -28,8 +29,8 @@ function DashboardContent() {
   const { notes, loading } = useAppSelector((state) => state.notes)
   const searchParams = useSearchParams()
   const router = useRouter()
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [filterOpen, setFilterOpen] = useState(false)
+
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [selectedTopics, setSelectedTopics] = useState<string[]>([])
   const [dateFilter, setDateFilter] = useState<string>('all')
@@ -101,6 +102,7 @@ function DashboardContent() {
 
   // Calculate stats
   const enrichedNotes = notes.filter(n => n.summary).length
+  const favouriteNotes = notes.filter(n => n.tags?.includes('favorite')).length
   const oneDayAgo = new Date()
   oneDayAgo.setDate(oneDayAgo.getDate() - 1)
   const recentNotes = notes.filter(n => new Date(n.updated_at) > oneDayAgo).length
@@ -179,10 +181,7 @@ function DashboardContent() {
     <div className="min-h-screen w-full flex flex-col">
       <Navbar />
       
-      <div className="flex-1 flex w-full">
-        <Sidebar className="hidden lg:flex" />
-        
-        <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto">
           <div className="container max-w-7xl mx-auto p-6">
             {/* Stats Section */}
             {notes.length > 0 && (
@@ -190,6 +189,7 @@ function DashboardContent() {
                 totalNotes={notes.length}
                 notesThisWeek={recentNotes}
                 enrichedNotes={enrichedNotes}
+                favouriteNotes={favouriteNotes}
               />
             )}
 
@@ -199,6 +199,38 @@ function DashboardContent() {
                 <TopicClusters />
               </div>
             )}
+
+            {/* My Notebooks Section */}
+            {notes.length > 0 && (
+              <div className="mb-8">
+                <MyNotebooks />
+              </div>
+            )}
+
+            {/* Breadcrumb Navigation */}
+            <div className="flex items-center gap-2 mb-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => router.push('/dashboard')}
+                className="gap-2 text-muted-foreground hover:text-foreground"
+              >
+                <Home className="h-4 w-4" />
+                All Notes
+              </Button>
+              
+              {(currentView === 'favorites' || currentView === 'recent' || currentView === 'tag') && (
+                <>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">
+                    {currentView === 'favorites' ? 'Favorites' : 
+                     currentView === 'recent' ? 'Recent Notes' : 
+                     currentView === 'tag' ? `${selectedTags[0]?.charAt(0).toUpperCase()}${selectedTags[0]?.slice(1)}` :
+                     'Current View'}
+                  </span>
+                </>
+              )}
+            </div>
 
             <div className="flex items-center justify-between mb-6">
               <div>
@@ -215,6 +247,19 @@ function DashboardContent() {
               </div>
               
               <div className="flex items-center gap-2">
+                {/* Show back button when viewing filtered views */}
+                {(currentView === 'favorites' || currentView === 'recent' || currentNotebook) && (
+                  <Button 
+                    variant="outline"
+                    onClick={() => router.push('/dashboard')}
+                    className="gap-2"
+                  >
+                    <Home className="h-4 w-4" />
+                    <span className="hidden sm:inline">Back to All Notes</span>
+                    <span className="sm:hidden">Back</span>
+                  </Button>
+                )}
+                
                 {/* Show "Create Note" button when viewing a notebook */}
                 {currentNotebook && (
                   <Button 
@@ -354,25 +399,6 @@ function DashboardContent() {
                     </ScrollArea>
                   </DialogContent>
                 </Dialog>
-                
-                <div className="flex items-center gap-1 p-1 rounded-lg bg-muted/50">
-                  <Button
-                    variant={viewMode === "grid" ? "secondary" : "ghost"}
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={() => setViewMode("grid")}
-                  >
-                    <LayoutGrid className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant={viewMode === "list" ? "secondary" : "ghost"}
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={() => setViewMode("list")}
-                  >
-                    <List className="h-4 w-4" />
-                  </Button>
-                </div>
               </div>
             </div>
 
@@ -414,8 +440,7 @@ function DashboardContent() {
               </div>
             )}
           </div>
-        </main>
-      </div>
+      </main>
     </div>
   )
 }

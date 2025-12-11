@@ -24,12 +24,11 @@ export async function POST(request: NextRequest) {
       errors: [] as string[]
     }
 
-    // Get all notes without embeddings
+    // Get ALL notes to force regenerate embeddings
     const { data: notes, error: notesError } = await supabase
       .from('notes')
       .select('*')
       .eq('user_id', user.id)
-      .is('embedding', null)
 
     if (notesError) throw notesError
 
@@ -64,12 +63,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Get all documents without embeddings
+    // Get ALL documents to force regenerate embeddings
     const { data: documents, error: docsError } = await supabase
       .from('documents')
       .select('*')
       .eq('user_id', user.id)
-      .is('embedding', null)
 
     if (docsError) throw docsError
 
