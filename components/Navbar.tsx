@@ -28,57 +28,60 @@ export const Navbar = () => {
   useEffect(() => {
     console.log('welcomeOpen state changed to:', welcomeOpen);
   }, [welcomeOpen]);
-  const supabase = createClient();
 
   useEffect(() => {
     const getUser = async () => {
+      const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
     };
     getUser();
 
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state change:', event, 'User:', !!session?.user);
-      setUser(session?.user ?? null);
-      
-      // Only reload once after successful sign-in
-      if (event === 'SIGNED_IN' && session?.user) {
-        try {
-          const hasReloaded = typeof window !== 'undefined' ? localStorage.getItem('hasReloadedAfterSignIn') : null;
-          if (!hasReloaded && typeof window !== 'undefined') {
-            localStorage.setItem('hasReloadedAfterSignIn', 'true');
-            setTimeout(() => {
-              window.location.reload();
-            }, 500);
+      // Listen for auth state changes
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        console.log('Auth state change:', event, 'User:', !!session?.user);
+        setUser(session?.user ?? null);
+        
+        // Only reload once after successful sign-in
+        if (event === 'SIGNED_IN' && session?.user) {
+          try {
+            const hasReloaded = typeof window !== 'undefined' ? localStorage.getItem('hasReloadedAfterSignIn') : null;
+            if (!hasReloaded && typeof window !== 'undefined') {
+              localStorage.setItem('hasReloadedAfterSignIn', 'true');
+              setTimeout(() => {
+                window.location.reload();
+              }, 500);
+            }
+          } catch (error) {
+            console.log('localStorage not available, skipping reload');
           }
-        } catch (error) {
-          console.log('localStorage not available, skipping reload');
         }
-      }
-      
-      // Clear the reload flag when user signs out
-      if (event === 'SIGNED_OUT') {
-        console.log('SIGNED_OUT event detected');
-        try {
-          if (typeof window !== 'undefined') {
-            localStorage.removeItem('hasReloadedAfterSignIn');
+        
+        // Clear the reload flag when user signs out
+        if (event === 'SIGNED_OUT') {
+          console.log('SIGNED_OUT event detected');
+          try {
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem('hasReloadedAfterSignIn');
+            }
+          } catch (error) {
+            console.log('localStorage not available');
           }
-        } catch (error) {
-          console.log('localStorage not available');
+          // Don't reset welcomeOpen here - let handleSignOut manage it
         }
-        // Don't reset welcomeOpen here - let handleSignOut manage it
-      }
-    });
+      });
 
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [supabase, router]);
+      return () => {
+        subscription.unsubscribe();
+      };
+    }
+    getUser();
+  }, [router]);
 
   const handleSignOut = async () => {
     console.log('Signing out...');
     
+    const supabase = createClient();
     await supabase.auth.signOut();
     setUser(null);
     

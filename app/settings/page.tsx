@@ -2,6 +2,9 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -13,7 +16,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 export default function SettingsPage() {
   const router = useRouter()
-  const supabase = createClient()
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
@@ -28,6 +30,7 @@ export default function SettingsPage() {
 
   const loadUserData = async () => {
     try {
+      const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         router.push('/')
@@ -86,6 +89,7 @@ export default function SettingsPage() {
           const base64String = event.target?.result as string
           
           // Update user metadata with base64 image
+          const supabase = createClient()
           const { error: updateError } = await supabase.auth.updateUser({
             data: { avatar_url: base64String }
           })
@@ -121,6 +125,7 @@ export default function SettingsPage() {
   const handleUpdateProfile = async () => {
     try {
       setLoading(true)
+      const supabase = createClient()
       await supabase.auth.updateUser({
         data: { display_name: displayName }
       })
@@ -136,6 +141,7 @@ export default function SettingsPage() {
     if (!confirm('Are you sure you want to delete your account? This action cannot be undone.')) return
     
     try {
+      const supabase = createClient()
       // Delete all user notes first
       await supabase.from('notes').delete().eq('user_id', user.id)
       await supabase.from('documents').delete().eq('user_id', user.id)
@@ -149,11 +155,13 @@ export default function SettingsPage() {
   }
 
   const handleSignOut = async () => {
+    const supabase = createClient()
     await supabase.auth.signOut()
     router.push('/')
   }
 
   const handleSwitchAccount = async () => {
+    const supabase = createClient()
     await supabase.auth.signOut()
     router.push('/')
   }
