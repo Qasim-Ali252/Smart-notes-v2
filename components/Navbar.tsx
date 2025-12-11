@@ -40,7 +40,7 @@ export const Navbar = () => {
     getUser();
 
     // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: any, session: any) => {
       console.log('Auth state change:', event, 'User:', !!session?.user);
       setUser(session?.user ?? null);
       

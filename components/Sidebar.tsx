@@ -118,7 +118,7 @@ export const Sidebar = ({ className }: SidebarProps) => {
 
       // Count tags
       const tagCountMap: Record<string, number> = {};
-      notes?.forEach(note => {
+      notes?.forEach((note: any) => {
         note.tags?.forEach((tag: string) => {
           tagCountMap[tag.toLowerCase()] = (tagCountMap[tag.toLowerCase()] || 0) + 1;
         });

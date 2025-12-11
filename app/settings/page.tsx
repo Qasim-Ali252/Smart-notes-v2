@@ -47,8 +47,8 @@ export default function SettingsPage() {
         .eq('user_id', user.id)
 
       if (notes) {
-        const favorites = notes.filter(n => n.is_favorite).length
-        const recent = notes.filter(n => {
+        const favorites = notes.filter((n: any) => n.is_favorite).length
+        const recent = notes.filter((n: any) => {
           const dayAgo = new Date()
           dayAgo.setDate(dayAgo.getDate() - 1)
           return new Date(n.created_at) > dayAgo
