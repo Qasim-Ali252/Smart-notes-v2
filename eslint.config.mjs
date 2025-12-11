@@ -1,19 +1,6 @@
-import nextPlugin from "eslint-plugin-next";
+/** @type {import('eslint').Linter.Config} */
+const config = {
+  extends: ['next/core-web-vitals', 'next/typescript']
+};
 
-export default [
-  {
-    ignores: [
-      ".next/**",
-      "out/**",
-      "build/**",
-      "next-env.d.ts",
-    ],
-  },
-  {
-    files: ["**/*.{js,jsx,ts,tsx}"],
-    extends: ["next/core-web-vitals", "next/typescript"],
-    plugins: {
-      next: nextPlugin,
-    }
-  }
-];
+export default config;
