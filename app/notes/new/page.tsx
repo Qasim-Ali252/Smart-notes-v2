@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAppDispatch } from '@/lib/store/hooks'
 import { createNote } from '@/lib/store/slices/notesSlice'
@@ -12,7 +12,7 @@ import { ArrowLeft, Save, Paperclip, Folder } from 'lucide-react'
 import { enrichNote } from '@/lib/edge-functions'
 import { Badge } from '@/components/ui/badge'
 
-export default function NewNotePage() {
+function NewNoteContent() {
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [tags, setTags] = useState('')
@@ -233,5 +233,13 @@ export default function NewNotePage() {
         )}
       </main>
     </div>
+  )
+}
+
+export default function NewNotePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <NewNoteContent />
+    </Suspense>
   )
 }

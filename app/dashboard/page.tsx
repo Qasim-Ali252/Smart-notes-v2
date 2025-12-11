@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, Suspense } from 'react'
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks'
 import { fetchNotes } from '@/lib/store/slices/notesSlice'
 import { Navbar } from '@/components/Navbar'
@@ -23,7 +23,7 @@ import { Label } from "@/components/ui/label"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { useSearchParams, useRouter } from 'next/navigation'
 
-export default function DashboardPage() {
+function DashboardContent() {
   const dispatch = useAppDispatch()
   const { notes, loading } = useAppSelector((state) => state.notes)
   const searchParams = useSearchParams()
@@ -417,5 +417,13 @@ export default function DashboardPage() {
         </main>
       </div>
     </div>
+  )
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading...</div>}>
+      <DashboardContent />
+    </Suspense>
   )
 }
