@@ -63,7 +63,6 @@ RETURNS TABLE (
   topic_labels text[],
   note_id uuid,
   created_at timestamptz,
-  updated_at timestamptz,
   user_id uuid,
   similarity float
 )
@@ -82,7 +81,6 @@ BEGIN
     documents.topic_labels,
     documents.note_id,
     documents.created_at,
-    documents.updated_at,
     documents.user_id,
     (documents.embedding <#> query_embedding) * -1 AS similarity
   FROM documents
