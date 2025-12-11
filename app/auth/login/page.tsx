@@ -13,7 +13,6 @@ function LoginForm() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
-  const supabase = createClient()
   const searchParams = useSearchParams()
 
   useEffect(() => {
@@ -28,6 +27,7 @@ function LoginForm() {
     setLoading(true)
     setMessage('')
 
+    const supabase = createClient()
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
