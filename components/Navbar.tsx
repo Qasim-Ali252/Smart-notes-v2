@@ -39,6 +39,11 @@ export const Navbar = () => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
+      
+      // Auto-open welcome dialog for new users (no authentication)
+      if (!user) {
+        setWelcomeOpen(true);
+      }
     };
     
     getUser();
@@ -50,6 +55,7 @@ export const Navbar = () => {
       
       // Only reload once after successful sign-in
       if (event === 'SIGNED_IN' && session?.user) {
+        setWelcomeOpen(false); // Close welcome dialog when user signs in
         try {
           const hasReloaded = typeof window !== 'undefined' ? localStorage.getItem('hasReloadedAfterSignIn') : null;
           if (!hasReloaded && typeof window !== 'undefined') {
@@ -74,6 +80,11 @@ export const Navbar = () => {
           console.log('localStorage not available');
         }
         // Don't reset welcomeOpen here - let handleSignOut manage it
+      }
+      
+      // Auto-open welcome dialog for unauthenticated users
+      if (!session?.user && event !== 'SIGNED_OUT') {
+        setWelcomeOpen(true);
       }
     });
 
@@ -297,24 +308,14 @@ export const Navbar = () => {
               </DropdownMenu>
             </>
           ) : (
-            <div className="flex gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setWelcomeOpen(true)}
-                className="text-xs"
-              >
-                Test
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setSignInOpen(true)}
-                className="gap-2"
-              >
-                Sign In
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSignInOpen(true)}
+              className="gap-2"
+            >
+              Sign In
+            </Button>
           )}
         </div>
       </div>
