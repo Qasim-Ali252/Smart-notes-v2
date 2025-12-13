@@ -27,19 +27,28 @@ export const TopicClusters = () => {
   const analyzeClusters = async () => {
     setLoading(true)
     try {
+      console.log('Starting topic analysis...')
       const response = await fetch('/api/analyze-topics', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       })
 
-      if (!response.ok) throw new Error('Failed to analyze topics')
+      console.log('Response status:', response.status)
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('API Error:', errorText)
+        throw new Error(`Failed to analyze topics: ${response.status} ${errorText}`)
+      }
 
       const data = await response.json()
+      console.log('Analysis result:', data)
       setClusters(data.clusters || [])
       setAnalyzed(true)
     } catch (error) {
       console.error('Error analyzing topics:', error)
-      alert('Failed to analyze topics. Please try again.')
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      alert(`Failed to analyze topics: ${errorMessage}`)
     } finally {
       setLoading(false)
     }
@@ -67,31 +76,65 @@ export const TopicClusters = () => {
         </div>
         
         {!analyzed && (
-          <Button
-            onClick={analyzeClusters}
-            disabled={loading}
-            className="gap-2"
-          >
-            {loading ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Analyzing...
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-4 w-4" />
-                Analyze Topics
-              </>
-            )}
-          </Button>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            
+            <Button
+              onClick={analyzeClusters}
+              disabled={loading}
+              className="gap-2"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Analyzing...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  Analyze Topics
+                </>
+              )}
+            </Button>
+          </div>
         )}
       </div>
 
       {analyzed && clusters.length === 0 && (
-        <div className="glass rounded-2xl p-8 text-center">
-          <p className="text-muted-foreground">
-            Create more notes to see topic clusters!
-          </p>
+        <div className="glass rounded-2xl p-8 text-center space-y-3">
+          <div className="flex items-center justify-center w-12 h-12 mx-auto rounded-full bg-muted/50">
+            <Sparkles className="h-6 w-6 text-muted-foreground" />
+          </div>
+          <div>
+            <h3 className="font-medium mb-2">No topic clusters found</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              To create meaningful topic clusters, try:
+            </p>
+            <ul className="text-sm text-muted-foreground space-y-1 text-left max-w-sm mx-auto">
+              <li>• Add more diverse content to your notes</li>
+              <li>• Include different topics and subjects</li>
+              <li>• Let AI enrich your notes with summaries</li>
+              <li>• Create at least 5-7 notes on different topics</li>
+            </ul>
+          </div>
+          <Button
+            onClick={analyzeClusters}
+            variant="outline"
+            size="sm"
+            disabled={loading}
+            className="gap-2 mt-4"
+          >
+            {loading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Re-analyzing...
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-4 w-4" />
+                Try Again
+              </>
+            )}
+          </Button>
         </div>
       )}
 

@@ -3,10 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
-  eslint: {
-    // Disable ESLint during builds to avoid config issues
-    ignoreDuringBuilds: true,
-  },
+  // ESLint configuration moved to eslint.config.mjs
 };
 
 export default nextConfig;
