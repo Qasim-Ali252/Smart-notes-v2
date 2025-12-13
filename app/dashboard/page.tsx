@@ -137,8 +137,6 @@ function DashboardContent() {
     const filter = searchParams.get('filter')
     const tag = searchParams.get('tag')
 
-    console.log('Dashboard filter params:', { filter, tag })
-
     if (filter === 'favorites') {
       setCurrentView('favorites')
       setSelectedTags(['favorite'])
@@ -148,7 +146,6 @@ function DashboardContent() {
     } else if (tag) {
       setCurrentView('tag')
       setSelectedTags([tag])
-      console.log('Filtering by tag:', tag)
     } else {
       setCurrentView('all')
       // Clear filters when going to "All Notes"

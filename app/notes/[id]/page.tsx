@@ -7,16 +7,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { 
-  ArrowLeft, Save, Trash2, Sparkles, FileText, MessageSquare, 
-  Maximize2, Minimize2, CheckCircle2, Clock, Type,
-  Lightbulb, ListTodo, BookOpen, RefreshCw, Target, FileEdit
+  ArrowLeft, Save, Trash2, Sparkles, 
+  Maximize2, Minimize2, CheckCircle2, Type, RefreshCw
 } from 'lucide-react'
 import { DocumentUpload } from '@/components/DocumentUpload'
 import { LinkedDocuments } from '@/components/LinkedDocuments'
 import { NoteChat } from '@/components/NoteChat'
 import { enrichNote } from '@/lib/edge-functions'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
+
 import { cn } from "@/lib/utils"
 
 export default function NoteDetailPage() {
@@ -32,7 +30,7 @@ export default function NoteDetailPage() {
   const [tags, setTags] = useState('')
   const [saving, setSaving] = useState(false)
   const [documentsRefresh, setDocumentsRefresh] = useState(0)
-  const [activeTab, setActiveTab] = useState('insights')
+
   const [focusMode, setFocusMode] = useState(false)
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
   const [wordCount, setWordCount] = useState(0)

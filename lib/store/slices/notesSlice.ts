@@ -39,9 +39,12 @@ const initialState: NotesState = {
   }
 }
 
-export const fetchNotes = createAsyncThunk(
+export const fetchNotes = createAsyncThunk<
+  { notes: Note[]; totalCount: number; page: number; pageSize: number },
+  { page?: number; pageSize?: number; reset?: boolean } | void
+>(
   'notes/fetchNotes', 
-  async (params: { page?: number; pageSize?: number; reset?: boolean } = {}, { rejectWithValue }) => {
+  async (params, { rejectWithValue }) => {
     try {
       const supabase = createClient()
       
@@ -52,8 +55,8 @@ export const fetchNotes = createAsyncThunk(
         return { notes: [], totalCount: 0, page: 1, pageSize: 12 }
       }
       
-      const page = params.page || 1
-      const pageSize = params.pageSize || 12
+      const page = params?.page || 1
+      const pageSize = params?.pageSize || 12
       const from = (page - 1) * pageSize
       const to = from + pageSize - 1
       
