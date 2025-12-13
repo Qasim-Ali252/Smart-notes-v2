@@ -137,12 +137,23 @@ ${note.key_topics?.length ? `Key Topics: ${note.key_topics.join(', ')}` : ''}
 ${note.tags?.length ? `Tags: ${note.tags.join(', ')}` : ''}
     `.trim()
 
-    // Build prompt with chat history
+    // Build prompt with enhanced chat history
     let conversationHistory = ''
-    if (chatHistory && Array.isArray(chatHistory)) {
-      conversationHistory = chatHistory.slice(-5).map((msg: any) => 
-        `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`
-      ).join('\n')
+    if (chatHistory && Array.isArray(chatHistory) && chatHistory.length > 0) {
+      // Use more recent messages for better context
+      const recentHistory = chatHistory.slice(-10)
+      conversationHistory = `
+Previous conversation context:
+${recentHistory.map((msg: any) => 
+  `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}`
+).join('\n')}
+
+Based on our previous conversation above, please provide a contextual response that:
+- References relevant points from our chat history when appropriate
+- Builds upon previous answers and suggestions
+- Maintains consistency with earlier responses
+- Avoids repeating information already covered unless specifically asked
+`
     }
 
     const fullPrompt = `You are an AI assistant helping the user understand and work with their note.

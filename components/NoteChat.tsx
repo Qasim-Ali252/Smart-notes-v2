@@ -3,11 +3,12 @@ import { useState, useRef, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Send, Bot, User, Loader2, Sparkles } from 'lucide-react'
+import { Send, Bot, User, Loader2, Sparkles, Trash2, RotateCcw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import ReactMarkdown from 'react-markdown'
 
 interface Message {
+  id?: string
   role: 'user' | 'assistant'
   content: string
   timestamp: Date
@@ -20,23 +21,100 @@ interface NoteChatProps {
 }
 
 export const NoteChat = ({ noteId, noteTitle, noteContent }: NoteChatProps) => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: 'assistant',
-      content: `Hi! I'm your AI assistant for "${noteTitle}". Ask me anything about this note, or request improvements, summaries, or action items!`,
-      timestamp: new Date()
-    }
-  ])
+  const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [loadingHistory, setLoadingHistory] = useState(true)
   const scrollRef = useRef<HTMLDivElement>(null)
 
+  // Load chat history on component mount
   useEffect(() => {
-    // Scroll to bottom when new messages arrive
+    loadChatHistory()
+  }, [noteId])
+
+  // Scroll to bottom when new messages arrive
+  useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
   }, [messages])
+
+  const loadChatHistory = async () => {
+    try {
+      setLoadingHistory(true)
+      const response = await fetch(`/api/chat-history?noteId=${noteId}`)
+      const data = await response.json()
+
+      if (response.ok && data.chatHistory) {
+        const historyMessages = data.chatHistory.map((msg: any) => ({
+          id: msg.id,
+          role: msg.role,
+          content: msg.content,
+          timestamp: new Date(msg.timestamp)
+        }))
+
+        if (historyMessages.length === 0) {
+          // No history, show welcome message
+          setMessages([{
+            role: 'assistant',
+            content: `Hi! I'm your AI assistant for "${noteTitle}". Ask me anything about this note, or request improvements, summaries, or action items!`,
+            timestamp: new Date()
+          }])
+        } else {
+          setMessages(historyMessages)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load chat history:', error)
+      // Fallback to welcome message
+      setMessages([{
+        role: 'assistant',
+        content: `Hi! I'm your AI assistant for "${noteTitle}". Ask me anything about this note, or request improvements, summaries, or action items!`,
+        timestamp: new Date()
+      }])
+    } finally {
+      setLoadingHistory(false)
+    }
+  }
+
+  const saveChatHistory = async (newMessages: Message[]) => {
+    try {
+      // Only save messages that don't have an ID (new messages)
+      const messagesToSave = newMessages.filter(msg => !msg.id)
+      
+      if (messagesToSave.length === 0) return
+
+      await fetch('/api/chat-history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          noteId,
+          messages: messagesToSave
+        })
+      })
+    } catch (error) {
+      console.error('Failed to save chat history:', error)
+    }
+  }
+
+  const clearChatHistory = async () => {
+    try {
+      const response = await fetch(`/api/chat-history?noteId=${noteId}`, {
+        method: 'DELETE'
+      })
+
+      if (response.ok) {
+        // Reset to welcome message
+        setMessages([{
+          role: 'assistant',
+          content: `Hi! I'm your AI assistant for "${noteTitle}". Ask me anything about this note, or request improvements, summaries, or action items!`,
+          timestamp: new Date()
+        }])
+      }
+    } catch (error) {
+      console.error('Failed to clear chat history:', error)
+    }
+  }
 
   const handleSend = async () => {
     if (!input.trim() || loading) return
@@ -47,7 +125,8 @@ export const NoteChat = ({ noteId, noteTitle, noteContent }: NoteChatProps) => {
       timestamp: new Date()
     }
 
-    setMessages(prev => [...prev, userMessage])
+    const updatedMessages = [...messages, userMessage]
+    setMessages(updatedMessages)
     setInput('')
     setLoading(true)
 
@@ -59,7 +138,7 @@ export const NoteChat = ({ noteId, noteTitle, noteContent }: NoteChatProps) => {
           noteId,
           noteContent,
           question: input,
-          chatHistory: messages.slice(-5) // Last 5 messages for context
+          chatHistory: messages.slice(-10) // Last 10 messages for better context
         })
       })
 
@@ -79,7 +158,11 @@ export const NoteChat = ({ noteId, noteTitle, noteContent }: NoteChatProps) => {
         timestamp: new Date()
       }
 
-      setMessages(prev => [...prev, assistantMessage])
+      const finalMessages = [...updatedMessages, assistantMessage]
+      setMessages(finalMessages)
+
+      // Save the new messages to database
+      await saveChatHistory([userMessage, assistantMessage])
     } catch (error: any) {
       console.error('Chat error:', error)
       const errorMessage: Message = {
@@ -87,7 +170,11 @@ export const NoteChat = ({ noteId, noteTitle, noteContent }: NoteChatProps) => {
         content: `Sorry, I encountered an error: ${error.message || 'Please try again.'}`,
         timestamp: new Date()
       }
-      setMessages(prev => [...prev, errorMessage])
+      const finalMessages = [...updatedMessages, errorMessage]
+      setMessages(finalMessages)
+
+      // Save the error message too
+      await saveChatHistory([userMessage, errorMessage])
     } finally {
       setLoading(false)
     }
@@ -109,14 +196,51 @@ export const NoteChat = ({ noteId, noteTitle, noteContent }: NoteChatProps) => {
 
   return (
     <div className="glass rounded-2xl p-4 space-y-4">
-      <div className="flex items-center gap-2 pb-2 border-b border-border/50">
-        <Sparkles className="h-5 w-5 text-primary" />
-        <h3 className="font-semibold">AI Assistant</h3>
+      <div className="flex items-center justify-between pb-2 border-b border-border/50">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-primary" />
+          <h3 className="font-semibold">AI Assistant</h3>
+          {messages.length > 1 && (
+            <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
+              {messages.length - 1} messages
+            </span>
+          )}
+        </div>
+        
+        {messages.length > 1 && (
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={loadChatHistory}
+              disabled={loadingHistory}
+              className="h-8 w-8 p-0"
+              title="Refresh chat"
+            >
+              <RotateCcw className={cn("h-3 w-3", loadingHistory && "animate-spin")} />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearChatHistory}
+              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+              title="Clear chat history"
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+          </div>
+        )}
       </div>
 
       <ScrollArea className="h-[400px] pr-4" ref={scrollRef}>
         <div className="space-y-4">
-          {messages.map((message, idx) => (
+          {loadingHistory ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <span className="ml-2 text-sm text-muted-foreground">Loading chat history...</span>
+            </div>
+          ) : (
+            messages.map((message, idx) => (
             <div
               key={idx}
               className={cn(
@@ -125,7 +249,7 @@ export const NoteChat = ({ noteId, noteTitle, noteContent }: NoteChatProps) => {
               )}
             >
               {message.role === 'assistant' && (
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                   <Bot className="h-4 w-4 text-primary" />
                 </div>
               )}
@@ -157,12 +281,13 @@ export const NoteChat = ({ noteId, noteTitle, noteContent }: NoteChatProps) => {
               </div>
 
               {message.role === 'user' && (
-                <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
+                <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
                   <User className="h-4 w-4 text-accent" />
                 </div>
               )}
             </div>
-          ))}
+            ))
+          )}
 
           {loading && (
             <div className="flex gap-3 justify-start">
@@ -206,15 +331,20 @@ export const NoteChat = ({ noteId, noteTitle, noteContent }: NoteChatProps) => {
           onClick={handleSend}
           disabled={!input.trim() || loading}
           size="icon"
-          className="h-[60px] w-[60px] flex-shrink-0"
+          className="h-[60px] w-[60px] shrink-0"
         >
           <Send className="h-4 w-4" />
         </Button>
       </div>
 
-      <p className="text-xs text-muted-foreground text-center">
-        AI responses are based on this note's content only
-      </p>
+      <div className="text-xs text-muted-foreground text-center space-y-1">
+        <p>AI responses are based on this note's content and chat history</p>
+        {messages.length > 1 && (
+          <p className="text-green-600 dark:text-green-400">
+            ✓ Chat history is automatically saved
+          </p>
+        )}
+      </div>
     </div>
   )
 }
