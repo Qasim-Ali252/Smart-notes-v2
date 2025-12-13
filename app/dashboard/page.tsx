@@ -1,7 +1,10 @@
 'use client'
 import { useEffect, useState, useMemo, Suspense } from 'react'
 import { useAppDispatch, useAppSelector } from '@/lib/store/hooks'
-import { fetchNotes } from '@/lib/store/slices/notesSlice'
+import { fetchNotes, resetPagination } from '@/lib/store/slices/notesSlice'
+import { NotePagination } from '@/components/NotePagination'
+import { NoteGridSkeleton } from '@/components/NoteCardSkeleton'
+
 import { Navbar } from '@/components/Navbar'
 
 import { NoteCard } from '@/components/NoteCard'
@@ -26,10 +29,11 @@ import { useSearchParams, useRouter } from 'next/navigation'
 
 function DashboardContent() {
   const dispatch = useAppDispatch()
-  const { notes, loading } = useAppSelector((state) => state.notes)
+  const { notes, loading, pagination } = useAppSelector((state) => state.notes)
   const searchParams = useSearchParams()
   const router = useRouter()
   const [filterOpen, setFilterOpen] = useState(false)
+
 
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [selectedTopics, setSelectedTopics] = useState<string[]>([])
@@ -118,9 +122,10 @@ function DashboardContent() {
   }
 
   useEffect(() => {
-    // Only fetch notes if user might be logged in
-    dispatch(fetchNotes()).catch(() => {
-      // Silently fail if not authenticated - user can still browse
+    // Reset pagination and fetch first page of notes
+    dispatch(resetPagination())
+    dispatch(fetchNotes({ page: 1, pageSize: 12, reset: true })).catch((error) => {
+      console.error('Failed to fetch notes:', error)
     })
   }, [dispatch])
 
@@ -241,7 +246,8 @@ function DashboardContent() {
                    'All Notes'}
                 </h1>
                 <p className="text-sm text-muted-foreground">
-                  {filteredNotes.length} of {notes.length} notes
+                  {filteredNotes.length} of {pagination.totalCount > 0 ? pagination.totalCount : notes.length} notes
+                  {pagination.totalCount > notes.length && ` • ${notes.length} loaded`}
                   {activeFiltersCount > 0 && ` • ${activeFiltersCount} filter${activeFiltersCount > 1 ? 's' : ''} active`}
                 </p>
               </div>
@@ -402,8 +408,8 @@ function DashboardContent() {
               </div>
             </div>
 
-            {loading ? (
-              <div className="text-center py-12">Loading...</div>
+            {loading && notes.length === 0 ? (
+              <NoteGridSkeleton count={12} />
             ) : notes.length === 0 ? (
               <div className="text-center py-12 glass rounded-lg">
                 <p className="text-muted-foreground">No notes yet. Create your first note!</p>
@@ -416,31 +422,38 @@ function DashboardContent() {
                 </Button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredNotes.map((note, index) => (
-                  <div
-                    key={note.id}
-                    style={{
-                      animationDelay: `${index * 50}ms`,
-                    }}
-                  >
-                    <NoteCard
-                      id={note.id}
-                      title={note.title}
-                      snippet={note.content}
-                      tags={note.tags}
-                      aiSummary={note.summary}
-                      lastEdited={formatDate(note.updated_at)}
-                      isPinned={note.tags?.includes('pinned')}
-                      isFavorite={note.tags?.includes('favorite')}
-                      readTime="3 min"
-                    />
-                  </div>
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredNotes.map((note, index) => (
+                    <div
+                      key={note.id}
+                      style={{
+                        animationDelay: `${index * 50}ms`,
+                      }}
+                    >
+                      <NoteCard
+                        id={note.id}
+                        title={note.title}
+                        snippet={note.content}
+                        tags={note.tags}
+                        aiSummary={note.summary}
+                        lastEdited={formatDate(note.updated_at)}
+                        isPinned={note.tags?.includes('pinned')}
+                        isFavorite={note.tags?.includes('favorite')}
+                        readTime="3 min"
+                      />
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Pagination Component */}
+                {notes.length > 0 && <NotePagination />}
+              </>
             )}
           </div>
       </main>
+      
+
     </div>
   )
 }
