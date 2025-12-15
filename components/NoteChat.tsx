@@ -195,7 +195,7 @@ export const NoteChat = ({ noteId, noteTitle, noteContent }: NoteChatProps) => {
   ]
 
   return (
-    <div className="glass rounded-2xl p-4 space-y-4">
+    <div className="glass rounded-2xl p-4 space-y-4 ">
       <div className="flex items-center justify-between pb-2 border-b border-border/50">
         <div className="flex items-center gap-2">
           <Sparkles className="h-5 w-5 text-primary" />

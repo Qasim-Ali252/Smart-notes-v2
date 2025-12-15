@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { DocumentUpload } from '@/components/DocumentUpload'
+import { NoteChat } from '@/components/NoteChat'
 import { Separator } from '@/components/ui/separator'
-import { ArrowLeft, Save, Paperclip, Folder } from 'lucide-react'
+import { ArrowLeft, Save, Paperclip, Folder, MessageCircle } from 'lucide-react'
 import { enrichNote } from '@/lib/edge-functions'
 import { Badge } from '@/components/ui/badge'
 
@@ -157,9 +158,9 @@ function NewNoteContent() {
         </div>
 
         {noteId && (
-          <>
+          <div className="space-y-6 mt-6">
             {/* AI Enrichment Results */}
-            <div className="glass rounded-2xl p-6 space-y-4 mt-6">
+            <div className="glass rounded-2xl p-6 space-y-4">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center">
                   {enrichmentLoading ? (
@@ -212,8 +213,24 @@ function NewNoteContent() {
               ) : null}
             </div>
 
+            {/* Q&A Assistance Section */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <MessageCircle className="h-5 w-5 text-primary" />
+                <h3 className="text-lg font-semibold">Q&A Assistance</h3>
+              </div>
+              <p className="text-sm text-muted-foreground mb-4">
+                Ask questions about your note, request summaries, or get suggestions for improvements.
+              </p>
+              <NoteChat 
+                noteId={noteId} 
+                noteTitle={title || 'New Note'} 
+                noteContent={content} 
+              />
+            </div>
+
             {/* Document Upload Section */}
-            <div className="glass rounded-2xl p-6 space-y-4 mt-6">
+            <div className="glass rounded-2xl p-6 space-y-4">
               <div className="flex items-center gap-2 mb-4">
                 <Paperclip className="h-5 w-5 text-primary" />
                 <h3 className="text-lg font-semibold">Attach Supporting Documents</h3>
@@ -229,7 +246,7 @@ function NewNoteContent() {
                 </Button>
               </div>
             </div>
-          </>
+          </div>
         )}
       </main>
     </div>

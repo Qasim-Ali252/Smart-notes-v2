@@ -229,7 +229,7 @@ export default function NoteDetailPage() {
 
             {/* Right Panel - AI Assistant Chat */}
             {!focusMode && (
-              <div className="glass-subtle rounded-2xl">
+              <div className="glass-subtle rounded-2xl p-4   sm:p-6 space-y-4">
                 <NoteChat 
                   noteId={noteId}
                   noteTitle={note.title}
