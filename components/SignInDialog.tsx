@@ -4,16 +4,42 @@ import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogPortal, DialogOverlay } from '@/components/ui/dialog'
+import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { InputOTP, InputOTPGroup, InputOTPSlot } from '@/components/ui/input-otp'
 import { Mail, Sparkles, Loader2, ArrowLeft } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import * as React from "react"
+
+// Custom DialogContent without close button
+const CustomDialogContent = React.forwardRef<
+  React.ElementRef<typeof DialogPrimitive.Content>,
+  React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
+>(({ className, children, ...props }, ref) => (
+  <DialogPortal>
+    <DialogOverlay />
+    <DialogPrimitive.Content
+      ref={ref}
+      className={cn(
+        "fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-2xl duration-500 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:rounded-2xl",
+        className,
+      )}
+      {...props}
+    >
+      {children}
+      {/* No close button here */}
+    </DialogPrimitive.Content>
+  </DialogPortal>
+))
+CustomDialogContent.displayName = "CustomDialogContent"
 
 interface SignInDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  isRequired?: boolean // When true, dialog cannot be closed
 }
 
-export const SignInDialog = ({ open, onOpenChange }: SignInDialogProps) => {
+export const SignInDialog = ({ open, onOpenChange, isRequired = false }: SignInDialogProps) => {
   const [step, setStep] = useState<'email' | 'otp'>('email')
   const [email, setEmail] = useState('')
   const [otp, setOtp] = useState('')
@@ -25,6 +51,11 @@ export const SignInDialog = ({ open, onOpenChange }: SignInDialogProps) => {
 
   // Reset state when dialog closes
   const handleOpenChange = (newOpen: boolean) => {
+    // If dialog is required (user not authenticated), prevent closing
+    if (isRequired && !newOpen) {
+      return // Don't allow closing
+    }
+    
     if (!newOpen) {
       // Reset all state when closing
       setTimeout(() => {
@@ -129,7 +160,11 @@ export const SignInDialog = ({ open, onOpenChange }: SignInDialogProps) => {
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md glass-strong border-2 border-primary/20">
+      <CustomDialogContent 
+        className="sm:max-w-md glass-strong border-2 border-primary/20"
+        onPointerDownOutside={isRequired ? (e) => e.preventDefault() : undefined}
+        onEscapeKeyDown={isRequired ? (e) => e.preventDefault() : undefined}
+      >
         <DialogHeader>
           <div className="w-16 h-16 mx-auto rounded-2xl flex items-center justify-center mb-4 animate-in zoom-in-50 duration-300" style={{
             background: 'linear-gradient(135deg, oklch(55% 0.18 280), oklch(60% 0.20 280))'
@@ -287,7 +322,7 @@ export const SignInDialog = ({ open, onOpenChange }: SignInDialogProps) => {
             </div>
           </form>
         )}
-      </DialogContent>
+      </CustomDialogContent>
     </Dialog>
   )
 }

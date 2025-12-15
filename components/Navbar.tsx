@@ -320,10 +320,20 @@ export const Navbar = () => {
         </div>
       </div>
 
-      <SignInDialog open={signInOpen} onOpenChange={setSignInOpen} />
+      <SignInDialog 
+        open={signInOpen} 
+        onOpenChange={setSignInOpen} 
+        isRequired={!user} // Make dialog non-dismissible when user is not authenticated
+      />
       <WelcomeDialog 
         open={welcomeOpen} 
-        onOpenChange={setWelcomeOpen}
+        onOpenChange={(open) => {
+          setWelcomeOpen(open);
+          // If welcome dialog is closed and user is not authenticated, force sign-in
+          if (!open && !user) {
+            setTimeout(() => setSignInOpen(true), 300);
+          }
+        }}
         onSignInClick={handleWelcomeSignIn}
       />
     </nav>
